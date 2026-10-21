@@ -41,3 +41,7 @@ Validated in Chromium with a synthesized multi-frequency pulse WAV: frequency-ba
 The original canvas background draws translucent flowing filaments over cyan, violet, rose, and blue light fields. Bass and high-frequency onsets kick a damped spring that displaces and bends the scene, then recoils. Controls and text remain steady. An atmosphere intensity slider adjusts the new background response; zero disables recoil. Motion-off and reduced-motion settings freeze the scene. Rendering is capped near 30 fps with device pixel ratio limited to 1.5.
 
 The referenced artist website could not be inspected (HTTP 403 and browser tunnel denial); no assets or layout were copied. Chromium checks verify actual audio-triggered recoil, zero-intensity and motion-off behavior, mobile width, and no browser exceptions. Production build passes.
+
+## Phosphor visual direction
+
+Updated from the supplied screenshot: green phosphor palette, subtle scanlines, procedural signal columns and scope rings, oversized NOX title, and terminal-style controls. The original ribbon field and audio-triggered spring recoil remain. No artwork from the reference is embedded. Gothic branding and editorial section typography remain alongside the terminal treatment. The production build and Chromium audio-recoil/motion/mobile checks pass.

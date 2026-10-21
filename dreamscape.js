@@ -25,7 +25,7 @@ export function createDreamscape(canvas) {
       const strength = motion ? intensity : 0;
       const pulse = active ? bass * strength : 0;
       canvas.style.setProperty('--recoil', `${x.toFixed(3)}px`);
-      const colors = ['#4876d4', '#9b59cf', '#dc79ac', '#4ebbb7'];
+      const colors = ['#1a8547', '#4b9859', '#92bc72', '#267c64'];
       ctx.globalCompositeOperation = 'screen';
       for (let layer = 0; layer < 4; layer++) {
         const centerX = width * (.15 + layer * .24) + Math.sin(phase + layer) * width * .12;
@@ -35,6 +35,22 @@ export function createDreamscape(canvas) {
         glow.addColorStop(0, `${colors[layer]}44`); glow.addColorStop(.5, `${colors[layer]}18`); glow.addColorStop(1, `${colors[layer]}00`);
         ctx.fillStyle = glow; ctx.fillRect(0, 0, width, height);
       }
+      // Phosphor columns and a geometric scope, drawn procedurally.
+      for (let col = 0; col < Math.ceil(width / 15); col++) {
+        const cx = col * 15 + Math.sin(col * .31 + phase) * (2 + Math.abs(x));
+        const brightness = .035 + .08 * (.5 + .5 * Math.sin(col * .7 + phase * 2));
+        ctx.fillStyle = `rgba(118,231,150,${brightness + pulse * .09})`;
+        for (let row = 0; row < Math.ceil(height / 13); row++) {
+          const shift = Math.sin(row * .09 + phase + col * .13) * x;
+          ctx.fillRect(cx + shift, row * 13, 3, 6);
+        }
+      }
+      ctx.save();ctx.translate(width * .77 + x * 3, height * .36);
+      const radius=Math.min(width*.19,200);
+      ctx.strokeStyle='rgba(173,235,167,.28)';ctx.lineWidth=1;
+      for(let ring=0;ring<3;ring++) {ctx.beginPath();ctx.arc(0,0,radius*(.5+ring*.25)+pulse*15,0,Math.PI*2);ctx.stroke()}
+      ctx.beginPath();ctx.moveTo(-radius*1.3,0);ctx.lineTo(radius*1.3,0);ctx.moveTo(0,-radius*1.3);ctx.lineTo(0,radius*1.3);ctx.stroke();
+      ctx.beginPath();for(let point=0;point<90;point++){const u=point/89,px=(u-.5)*radius*2.5,py=Math.sin(u*35+phase*6)*Math.sin(u*Math.PI)*(12+pulse*radius*.65);if(!point)ctx.moveTo(px,py);else ctx.lineTo(px,py)}ctx.stroke();ctx.restore();
       ctx.save(); ctx.translate(width * .65 + x * 2, height * .48 - Math.abs(x) * 1.5);
       ctx.rotate(-.4 + x * .002); ctx.scale(1 + pulse * .13, 1 - pulse * .06);
       // Layered curved filaments form a flowing, translucent fabric.
@@ -49,7 +65,7 @@ export function createDreamscape(canvas) {
           if (segment === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
         }
         const ribbon = ctx.createLinearGradient(-spread * .7, 0, spread * .7, 0);
-        ribbon.addColorStop(0, '#688ed000'); ribbon.addColorStop(.25, `rgba(93,184,200,${.12 + t * .12})`); ribbon.addColorStop(.55, `rgba(182,133,224,${.18 + pulse * .16})`); ribbon.addColorStop(.8, '#eb96be38'); ribbon.addColorStop(1, '#eb96be00');
+        ribbon.addColorStop(0, '#55a36a00'); ribbon.addColorStop(.25, `rgba(83,187,118,${.12 + t * .12})`); ribbon.addColorStop(.55, `rgba(154,218,151,${.18 + pulse * .16})`); ribbon.addColorStop(.8, '#b9e6a438'); ribbon.addColorStop(1, '#b9e6a400');
         ctx.strokeStyle = ribbon; ctx.lineWidth = i % 5 === 0 ? 2 : .8; ctx.stroke();
       }
       ctx.restore(); ctx.globalCompositeOperation = 'source-over';

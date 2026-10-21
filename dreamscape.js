@@ -19,7 +19,7 @@ export function createDreamscape(canvas) {
       const step = Math.min(dt, 1 / 30);
       velocity += (-130 * x - 9 * velocity) * step;
       x = Math.max(-24, Math.min(24, x + velocity * step));
-      if (motion) { phase += dt * (.12 + (active ? mids * .8 : 0)); colorPhase += dt / 65; }
+      if (motion) { phase += dt * (.12 + (active ? mids * .8 : 0)); colorPhase += dt / 32; }
       if (now - lastPaint < 30) return; lastPaint = now;
       ctx.clearRect(0, 0, width, height);
       const strength = motion ? intensity : 0;
@@ -33,6 +33,10 @@ export function createDreamscape(canvas) {
       const colors = Array.from({length:4},(_,i)=>colorAt(colorPhase+i*.19));
       const root=document.documentElement.style;
       root.setProperty('--scene-color',colors[0].join(' '));
+      root.setProperty('--scene-secondary',colors[1].join(' '));
+      root.setProperty('--cover-color-a',`rgb(${colorAt(colorPhase*1.15+.15).join(' ')})`);
+      root.setProperty('--cover-color-b',`rgb(${colorAt(colorPhase*1.15+.44).join(' ')})`);
+      root.setProperty('--cover-color-c',`rgb(${colorAt(colorPhase*1.15+.72).join(' ')})`);
       root.setProperty('--orb-color-a',`rgb(${colorAt(-colorPhase+.35).join(' ')})`);
       root.setProperty('--orb-color-b',`rgb(${colorAt(-colorPhase+.65).join(' ')})`);
       root.setProperty('--orb-color-c',`rgb(${colorAt(-colorPhase+.92).join(' ')})`);
@@ -42,7 +46,7 @@ export function createDreamscape(canvas) {
         const centerY = height * (.2 + (layer % 2) * .45);
         const radius = Math.max(width, height) * (.32 + pulse * .1);
         const glow = ctx.createRadialGradient(centerX + x * (layer + 1), centerY, 0, centerX, centerY, radius);
-        glow.addColorStop(0, `rgba(${colors[layer].join(",")},.27)`); glow.addColorStop(.5, `rgba(${colors[layer].join(",")},.095)`); glow.addColorStop(1, `rgba(${colors[layer].join(",")},0)`);
+        glow.addColorStop(0, `rgba(${colors[layer].join(",")},.42)`); glow.addColorStop(.5, `rgba(${colors[layer].join(",")},.15)`); glow.addColorStop(1, `rgba(${colors[layer].join(",")},0)`);
         ctx.fillStyle = glow; ctx.fillRect(0, 0, width, height);
       }
       // Phosphor columns and a geometric scope, drawn procedurally.

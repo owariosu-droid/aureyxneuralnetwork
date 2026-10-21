@@ -49,3 +49,7 @@ Updated from the supplied screenshot: green phosphor palette, subtle scanlines, 
 ## Cool-color tides and restored orb
 
 The main Nox title uses the gothic Unifraktur Maguntia face again. The canvas palette blends continuously through seafoam, blue, purple, and teal over a slow 65-second cycle, including during idle listening. The restored orb samples the same palette in reverse and scrolls its gradient independently over 42 seconds. Audio recoil remains layered over the slow movement. Motion-off freezes palette progression and orb animation. Browser checks cover evolving palette values, visible orb, spring recoil, motion-off freezing, and mobile width; production build passes.
+
+## Noticeable passive collection colors
+
+The Dystofuture cover and its moon now use a continuously changing cool palette plus an independently scrolling 22-second gradient. The site palette cycle is now 32 seconds, with brighter light fields and palette-linked panel borders; no audio or hover is needed. Orb colors continue in reverse. Motion-off freezes the colors and pauses the collection gradient. Chromium checks simulate eight idle seconds to verify both the background palette and rendered cover gradient change, then verify motion-off freezes them, the cover animation pauses, and mobile width fits. Production build passes.

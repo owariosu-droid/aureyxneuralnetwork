@@ -45,3 +45,7 @@ The referenced artist website could not be inspected (HTTP 403 and browser tunne
 ## Phosphor visual direction
 
 Updated from the supplied screenshot: green phosphor palette, subtle scanlines, procedural signal columns and scope rings, oversized NOX title, and terminal-style controls. The original ribbon field and audio-triggered spring recoil remain. No artwork from the reference is embedded. Gothic branding and editorial section typography remain alongside the terminal treatment. The production build and Chromium audio-recoil/motion/mobile checks pass.
+
+## Cool-color tides and restored orb
+
+The main Nox title uses the gothic Unifraktur Maguntia face again. The canvas palette blends continuously through seafoam, blue, purple, and teal over a slow 65-second cycle, including during idle listening. The restored orb samples the same palette in reverse and scrolls its gradient independently over 42 seconds. Audio recoil remains layered over the slow movement. Motion-off freezes palette progression and orb animation. Browser checks cover evolving palette values, visible orb, spring recoil, motion-off freezing, and mobile width; production build passes.

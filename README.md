@@ -35,3 +35,9 @@ Validated: reload persistence, duplicate prevention, exact original-file downloa
 Local player audio is analysed with Web Audio (2048-point FFT). Bass (30–250 Hz) moves the haze and orb; mids (250–2500 Hz) and highs (2500–12000 Hz) shift the cool-color palette. Adaptive bass-onset detection adds a gentle pulse with a 350 ms minimum interval; this is reactive beat detection, not a BPM grid or guaranteed beat alignment. A 24-band display follows the spectrum. Smoothing uses elapsed frame time, and reactions fade when playback pauses, ends, is muted, or the tab is hidden. Motion can be disabled and follows a system reduced-motion change. External Bandcamp playback is not analysed.
 
 Validated in Chromium with a synthesized multi-frequency pulse WAV: frequency-band and color response, motion toggle, decay after pause, and reduced-motion changes. Vault regression checks and production build pass.
+
+## Dreamscape and physical recoil
+
+The original canvas background draws translucent flowing filaments over cyan, violet, rose, and blue light fields. Bass and high-frequency onsets kick a damped spring that displaces and bends the scene, then recoils. Controls and text remain steady. An atmosphere intensity slider adjusts the new background response; zero disables recoil. Motion-off and reduced-motion settings freeze the scene. Rendering is capped near 30 fps with device pixel ratio limited to 1.5.
+
+The referenced artist website could not be inspected (HTTP 403 and browser tunnel denial); no assets or layout were copied. Chromium checks verify actual audio-triggered recoil, zero-intensity and motion-off behavior, mobile width, and no browser exceptions. Production build passes.

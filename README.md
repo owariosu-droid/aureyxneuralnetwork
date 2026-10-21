@@ -53,3 +53,9 @@ The main Nox title uses the gothic Unifraktur Maguntia face again. The canvas pa
 ## Noticeable passive collection colors
 
 The Dystofuture cover and its moon now use a continuously changing cool palette plus an independently scrolling 22-second gradient. The site palette cycle is now 32 seconds, with brighter light fields and palette-linked panel borders; no audio or hover is needed. Orb colors continue in reverse. Motion-off freezes the colors and pauses the collection gradient. Chromium checks simulate eight idle seconds to verify both the background palette and rendered cover gradient change, then verify motion-off freezes them, the cover animation pauses, and mobile width fits. Production build passes.
+
+## Separate pages
+
+Client-side routes now provide Sanctuary (`/`), Listen (`/listen`), Protect (`/protect`), and Vault (`/vault`) as separate visible pages. Existing artwork, animation, forms, and audio are retained in the shared app. Navigation preserves loaded audio and unsaved form fields; a compact player appears outside Listen when a song is loaded. Browser back/forward works, and legacy section hashes redirect to their corresponding page. Vercel rewrites serve the app for direct page visits. Local vault data remains on the same origin and in the same IndexedDB database.
+
+Validated in Chromium: direct navigation/reload for each route, legacy `#protect`, active nav state, back-button form preservation, saving and viewing a record across pages and reload, retained canvas, and all four mobile layouts. Production build passes. The live deployment was blocked by the environment proxy, so remote deployment behavior is not verified.

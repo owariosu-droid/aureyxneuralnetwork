@@ -1,4 +1,5 @@
 import './style.css';
+import { navigate } from './navigation.js';
 import { createDreamscape } from './dreamscape.js';
 const dream=createDreamscape(document.querySelector('#dreamscape'));
 let intensity=.65;document.querySelector('#intensity').oninput=e=>{intensity=Number(e.target.value)/100;document.querySelector('#intensity-value').textContent=`${e.target.value}%`};
@@ -6,7 +7,7 @@ const $=s=>document.querySelector(s);const audio=$('#audio');let context,analyse
 $('#year').textContent=new Date().getFullYear();
 function updateMotion(){document.body.classList.toggle('reduced',!motion);$('#motion').textContent=`Motion: ${motion?'on':'off'}`;$('#motion').setAttribute('aria-pressed',String(motion))}updateMotion();$('#motion').onclick=()=>{motion=!motion;updateMotion()};reducedMotion.addEventListener('change',e=>{if(e.matches){motion=false;updateMotion()}});
 window.addEventListener('pointermove',e=>{if(!motion)return;document.documentElement.style.setProperty('--px',`${(e.clientX/innerWidth-.5)*14}px`);document.documentElement.style.setProperty('--py',`${(e.clientY/innerHeight-.5)*10}px`)});
-$('#enter').onclick=()=>{$('#listen').scrollIntoView({behavior:motion?'smooth':'auto'});if(!audio.src)$('#audio-file').click();else play()};
+$('#enter').onclick=()=>{navigate('/listen');if(!audio.src)$('#audio-file').click();else play()};
 $('#audio-file').onchange=e=>{const file=e.target.files[0];if(!file)return;if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(file);audio.src=url;$('#song-title').textContent=file.name.replace(/\.[^.]+$/,'');$('#play').disabled=false;$('#seek').disabled=false;play()};
 async function play(){try{if(!context){context=new AudioContext();analyser=context.createAnalyser();analyser.fftSize=2048;analyser.smoothingTimeConstant=.65;source=context.createMediaElementSource(audio);source.connect(analyser);analyser.connect(context.destination)}await context.resume();await audio.play()}catch{$('#song-title').textContent='Unable to play this file. Try MP3 or WAV.'}}
 $('#play').onclick=()=>audio.paused?play():audio.pause();audio.onplay=()=>{$('#play').textContent='Ⅱ';$('#play').setAttribute('aria-label','Pause song')};audio.onpause=()=>{$('#play').textContent='▶';$('#play').setAttribute('aria-label','Play song')};audio.onended=()=>{$('#play').textContent='▶';$('#seek').value=0};
@@ -30,4 +31,4 @@ function animate(now){
  requestAnimationFrame(animate);
 }requestAnimationFrame(animate);
 $('#proof-file').onchange=e=>{proofFile=e.target.files[0];$('#proof-name').textContent=proofFile?proofFile.name:'Choose your original file'};
-import './vault.js';
+import './vault-store.js';

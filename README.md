@@ -1,13 +1,13 @@
 # Dystofuture — sound sanctuary
 
-Standalone site, separate from the Aureyx repository.
+Standalone Dystofuture music site, hosted in the aureyxneuralnetwork repository.
 
 ## Run
 
 Node.js 22+ recommended.
 
 ```sh
-cd /workspace/dystofuture
+cd /workspace/aureyxneuralnetwork
 npm ci --cache /tmp/dystofuture-npm
 npm run dev
 ```

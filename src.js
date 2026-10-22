@@ -6,7 +6,7 @@ let intensity=.65;document.querySelector('#intensity').oninput=e=>{intensity=Num
 const $=s=>document.querySelector(s);const audio=$('#audio');let context,analyser,source,url,proofFile;const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');let motion=!reducedMotion.matches;
 $('#year').textContent=new Date().getFullYear();
 function updateMotion(){document.body.classList.toggle('reduced',!motion);$('#motion').textContent=`Motion: ${motion?'on':'off'}`;$('#motion').setAttribute('aria-pressed',String(motion))}updateMotion();$('#motion').onclick=()=>{motion=!motion;updateMotion()};reducedMotion.addEventListener('change',e=>{if(e.matches){motion=false;updateMotion()}});
-window.addEventListener('pointermove',e=>{if(!motion)return;document.documentElement.style.setProperty('--px',`${(e.clientX/innerWidth-.5)*14}px`);document.documentElement.style.setProperty('--py',`${(e.clientY/innerHeight-.5)*10}px`)});
+window.addEventListener('pointermove',e=>{if(!motion)return;document.documentElement.style.setProperty('--depth-x',`${(e.clientX/innerWidth-.5)*22}px`);document.documentElement.style.setProperty('--depth-y',`${(e.clientY/innerHeight-.5)*18}px`);document.documentElement.style.setProperty('--px',`${(e.clientX/innerWidth-.5)*14}px`);document.documentElement.style.setProperty('--py',`${(e.clientY/innerHeight-.5)*10}px`)});
 $('#enter').onclick=()=>{navigate('/listen');if(!audio.src)$('#audio-file').click();else play()};
 $('#audio-file').onchange=e=>{const file=e.target.files[0];if(!file)return;if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(file);audio.src=url;$('#song-title').textContent=file.name.replace(/\.[^.]+$/,'');$('#play').disabled=false;$('#seek').disabled=false;play()};
 async function play(){try{if(!context){context=new AudioContext();analyser=context.createAnalyser();analyser.fftSize=2048;analyser.smoothingTimeConstant=.65;source=context.createMediaElementSource(audio);source.connect(analyser);analyser.connect(context.destination)}await context.resume();await audio.play()}catch{$('#song-title').textContent='Unable to play this file. Try MP3 or WAV.'}}
@@ -32,3 +32,5 @@ function animate(now){
 }requestAnimationFrame(animate);
 $('#proof-file').onchange=e=>{proofFile=e.target.files[0];$('#proof-name').textContent=proofFile?proofFile.name:'Choose your original file'};
 import './vault-store.js';
+
+window.addEventListener('scroll',()=>{document.documentElement.style.setProperty('--scroll-depth',`${motion?Math.min(scrollY*.12,90):0}px`)},{passive:true});

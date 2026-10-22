@@ -1,5 +1,6 @@
 import './style.css';
 import './offline.js';
+import './community.js';
 import { AudioResponse } from './audio-response.js';
 import { navigate } from './navigation.js';
 import { createDreamscape } from './dreamscape.js';
@@ -42,3 +43,5 @@ $('#proof-file').onchange=e=>{proofFile=e.target.files[0];$('#proof-name').textC
 import './vault-store.js';
 
 window.addEventListener('scroll',()=>{document.documentElement.style.setProperty('--scroll-depth',`${motion?Math.min(scrollY*.12,90):0}px`)},{passive:true});
+
+window.addEventListener('nox-space-locked',()=>{audio.pause();audio.removeAttribute('src');audio.load();if(url)URL.revokeObjectURL(url);url=null;$('#song-title').textContent='No song loaded';$('#time').textContent='0:00';$('#seek').value=0;$('#play').disabled=true;$('#seek').disabled=true;$('#now-playing').hidden=true;});

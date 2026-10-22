@@ -1,24 +1,9 @@
 import { navigate } from './navigation.js';
-import { encryptBackup, decryptBackup } from './secure-backup.js';
+import { encryptBackup, decryptBackup, validRecord } from './secure-backup.js';
 const $ = s => document.querySelector(s);
 const notice = 'Self-declared file record. Does not establish authorship, copyright registration, or a trusted timestamp. Device clock only.';
-let db;
-const ready = new Promise((resolve, reject) => {
-  const request = indexedDB.open('nox-vault', 1);
-  request.onupgradeneeded = () => request.result.createObjectStore('works', { keyPath: 'sha256' });
-  request.onsuccess = () => { db = request.result; resolve(db); };
-  request.onerror = () => reject(request.error);
-});
-async function store(mode, operation) {
-  await ready;
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('works', mode);
-    const request = operation(tx.objectStore('works'));
-    tx.oncomplete = () => resolve(request.result);
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error || new Error('Storage aborted'));
-  });
-}
+import { privateVault } from './private-vault.js';
+async function store(mode, operation){return privateVault.operation(mode,operation);}
 async function digest(file) {
   if (file.size > 500 * 1024 * 1024) throw new Error('Choose a file smaller than 500 MB.');
   return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', await file.arrayBuffer())), n => n.toString(16).padStart(2, '0')).join('');
@@ -99,8 +84,8 @@ $('#confirm-save').onclick=async()=>{
   await requestDurability();
   saveStatus('3 / 3 · Saving locally and checking the stored copy…');
   if(upgrade){
-   await ready;
-   await new Promise((resolve,reject)=>{const tx=db.transaction('works','readwrite'),s=tx.objectStore('works');const request=s.get(record.sha256);request.onsuccess=()=>{if(!request.result){tx.abort();return}s.put({...request.result,audio:record.audio})};tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('The existing record changed. Review the file again.'))});
+   const latest=await store('readonly',s=>s.get(record.sha256));if(!latest)throw new Error('Record no longer exists. Review again.');
+   await store('readwrite',s=>s.put({...latest,audio:record.audio}));
   }else await store('readwrite',s=>s.add(record));
   committed=true;
   const stored=await store('readonly',s=>s.get(record.sha256));
@@ -128,7 +113,7 @@ $('#verify').onclick = async () => {
     status.textContent = matches ? 'Exact match. This file has the same bytes as the recorded original. This does not verify the identity or authorship claimed in the record.' : 'No match. The file differs from this record. Re-encoding or editing also changes its fingerprint.';
   } catch (e) { status.textContent = `Unable to verify: ${e.message}`; } finally { button.disabled = false; }
 };
-render().catch(() => { $('#vault-list').textContent = 'Local storage is unavailable. Allow site storage or use a regular browser window to save works.'; });
+$('#vault-list').textContent='Unlock a private space to see its songs.';
 
 $('#vault-search').oninput=()=>render().catch(()=>{$('#vault-feedback').textContent='Could not read the vault.'});
 async function showDurability(){
@@ -141,19 +126,70 @@ async function requestDurability(){
 $('#persist-storage').onclick=async()=>{const granted=await requestDurability();$('#vault-feedback').textContent=granted?'Durable storage granted. Closing the browser keeps your files. Clearing site data still deletes them.':'Durable storage was not granted by this browser. Files still survive normal closure; keep backups against eviction.'};
 showDurability();
 let backupBusy=false;
-async function backupTask(action){if(backupBusy)return;backupBusy=true;$('#encrypted-export').disabled=true;$('#encrypted-restore').disabled=true;try{await action()}catch(e){$('#backup-status').textContent=e.message}finally{backupBusy=false;$('#encrypted-export').disabled=false;$('#encrypted-restore').disabled=false;$('#backup-password').value='';$('#backup-confirm').value=''}}
-$('#encrypted-export').onclick=()=>backupTask(async()=>{
+async function backupTask(action){if(backupBusy)return;const generation=privateVault.generation;const guard=()=>{if(generation!==privateVault.generation||!privateVault.key)throw new Error('Private space changed. The operation was cancelled.');};backupBusy=true;$('#encrypted-export').disabled=true;$('#encrypted-restore').disabled=true;try{guard();await action(guard)}catch(e){$('#backup-status').textContent=e.message}finally{backupBusy=false;$('#encrypted-export').disabled=false;$('#encrypted-restore').disabled=false;$('#backup-password').value='';$('#backup-confirm').value=''}}
+$('#encrypted-export').onclick=()=>backupTask(async(guard)=>{
  const password=$('#backup-password').value;
  if(password!==$('#backup-confirm').value)throw new Error('Passwords do not match.');
  $('#backup-status').textContent='Checking stored originals and encrypting locally…';
  const archive=await encryptBackup(await store('readonly',s=>s.getAll()),password);
- download(archive,'nox-encrypted-backup.nox');$('#backup-status').textContent='Encrypted backup downloaded. Store it in your cloud drive yourself. Your password has been cleared from the form.';
+ guard();download(archive,'nox-encrypted-backup.nox');$('#backup-status').textContent='Encrypted backup downloaded. Store it in your cloud drive yourself. Your password has been cleared from the form.';
 });
-$('#encrypted-restore').onclick=()=>backupTask(async()=>{
+$('#encrypted-restore').onclick=()=>backupTask(async(guard)=>{
  const file=$('#restore-file').files[0];if(!file)throw new Error('Choose an encrypted .nox backup first.');
  $('#backup-status').textContent='Decrypting and verifying all stored audio…';
- const restored=await decryptBackup(file,$('#backup-password').value);await ready;
+ const restored=await decryptBackup(file,$('#backup-password').value);guard();
  const existing=await store('readonly',s=>s.getAll());const hashes=new Set(existing.map(w=>w.sha256));const incoming=restored.filter(w=>!hashes.has(w.sha256));
- await new Promise((resolve,reject)=>{const tx=db.transaction('works','readwrite');for(const work of incoming)tx.objectStore('works').add(work);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Restore aborted. No records were imported.'))});
+ await privateVault.addMany(incoming);
  await render();$('#backup-status').textContent=`Restored ${incoming.length} works; kept ${restored.length-incoming.length} existing records unchanged. All included audio passed fingerprint verification.`;
 });
+
+function clearSpace(){
+ privateVault.lock();pendingSave=null;receiptRecord=null;resetReview();$('#proof-file').value='';$('#proof-name').textContent='Choose your original file';
+ for(const selector of ['#artist','#work-title','#notes','#backup-password','#backup-confirm','#vault-search'])$(selector).value='';
+ $('#restore-file').value='';$('#verify-audio').value='';$('#verify-record').value='';$('#proof-status').textContent='';$('#vault-feedback').textContent='';$('#backup-status').textContent='';$('#verify-status').textContent='';
+ for(const selector of ['#review-title','#review-details','#review-storage','#receipt-title','#receipt-detail'])$(selector).replaceChildren();
+ $('#vault-list').replaceChildren(element('p','Unlock your private space to see its songs.','empty-vault'));$('#vault-count').textContent='Locked';$('#vault-size').textContent='Locked';
+ $('#legacy-consent').checked=false;$('#legacy-delete-consent').checked=false;$('#legacy-status').textContent='';legacyImported=false;$('#space-label').textContent='No private space unlocked';$('#lock-space').hidden=true;document.body.classList.remove('space-unlocked');
+ window.dispatchEvent(new Event('nox-space-locked'));
+}
+$('#lock-space').onclick=()=>{if(saving||backupBusy){$('#space-status').textContent='Wait for the current save or backup to finish, then lock.';return}clearSpace();$('#space-status').textContent='Locked. Enter your space name and passphrase to reopen it.'};
+$('#space-form').onsubmit=async event=>{
+ event.preventDefault();if(saving||backupBusy)return;
+ const name=$('#space-name').value,password=$('#space-password').value,create=$('#space-create').checked;
+ if(create&&password!==$('#space-confirm').value){$('#space-status').textContent='Passphrases do not match.';return}
+ clearSpace();$('#space-submit').disabled=true;
+ try{await privateVault.open(name,password,create);$('#space-label').textContent=`Private space: ${privateVault.name}`;document.body.classList.add('space-unlocked');$('#lock-space').hidden=false;await render();$('#space-status').textContent='Unlocked on this tab. Only this space’s originals are shown. Lock before handing over your device.';}
+ catch(e){clearSpace();$('#space-status').textContent=e.message}
+ finally{$('#space-password').value='';$('#space-confirm').value='';$('#space-submit').disabled=false}
+};
+$('#space-create').onchange=()=>{$('#space-confirm-label').hidden=!$('#space-create').checked;$('#space-submit').textContent=$('#space-create').checked?'Create private space':'Unlock private space'};
+
+let legacyImported=false;
+async function readLegacy(){
+ const legacy=await new Promise((resolve,reject)=>{const r=indexedDB.open('nox-vault');r.onupgradeneeded=()=>r.transaction.abort();r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(new Error('No older device vault was found.'))});
+ try{return await new Promise((resolve,reject)=>{const tx=legacy.transaction('works','readonly'),r=tx.objectStore('works').getAll();tx.oncomplete=()=>resolve(r.result);tx.onerror=()=>reject(tx.error)})}finally{legacy.close()}
+}
+$('#legacy-import').onclick=async()=>{
+ if(!privateVault.key||!$('#legacy-consent').checked){$('#legacy-status').textContent='Unlock your space and confirm ownership first.';return}
+ if(saving||backupBusy)return;saving=true;$('#legacy-import').disabled=true;
+ try{
+  const legacy=await readLegacy();if(!legacy.length)throw new Error('The older device vault is empty.');
+  const existing=await store('readonly',s=>s.getAll()),hashes=new Set(existing.map(w=>w.sha256));
+  for(const work of legacy){if(!validRecord(metadata(work))||(work.audio&&await digest(work.audio)!==work.sha256))throw new Error('An older record failed validation. No migration was performed.')}
+  await privateVault.addMany(legacy.filter(w=>!hashes.has(w.sha256)));
+  for(const work of legacy){const stored=await store('readonly',s=>s.get(work.sha256));if(!stored)throw new Error('Could not verify imported records.');if(['artist','title','notes','file','deviceTime'].some(field=>(stored[field]||'')!==(work[field]||'')))throw new Error('An existing record has different credits or notes. Older source data has been retained; do not remove it without an independent backup.');if(work.audio&&!stored.audio)throw new Error('An existing fingerprint-only record needs its original added before removing the old vault.');if(work.audio&&await digest(stored.audio)!==work.sha256)throw new Error('Imported audio did not verify.')}
+  legacyImported=true;await render();$('#legacy-status').textContent='Imported encrypted copies and verified included audio. Older unencrypted records are still on this device. Make an encrypted backup before removing the old device vault below.';
+ }catch(e){$('#legacy-status').textContent=e.message}finally{saving=false;$('#legacy-import').disabled=false}
+};
+$('#legacy-delete').onclick=async()=>{
+ if(!privateVault.key||!legacyImported||!$('#legacy-delete-consent').checked){$('#legacy-status').textContent='Import and verify the older vault first, export an independent backup, then confirm removal.';return}
+ if(saving||backupBusy)return;
+ try{await new Promise((resolve,reject)=>{const r=indexedDB.deleteDatabase('nox-vault');r.onsuccess=resolve;r.onerror=()=>reject(r.error);r.onblocked=()=>reject(new Error('Close older Nox tabs, then retry removing the legacy vault.'))});legacyImported=false;$('#legacy-status').textContent='Old unencrypted device vault removed. Your encrypted private-space copies remain.'}catch(e){$('#legacy-status').textContent=e.message}
+};
+
+window.addEventListener('pagehide',clearSpace);
+window.addEventListener('pageshow',event=>{if(event.persisted)location.reload()});
+
+$('#quick-lock').onclick=()=>$('#lock-space').click();
+
+window.addEventListener('nox-force-lock',clearSpace);

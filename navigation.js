@@ -1,4 +1,4 @@
-const routes = { '/': { id: 'sanctuary', title: 'Sanctuary' }, '/listen': { id: 'listen', title: 'Listen' }, '/protect': { id: 'protect', title: 'Protect your sound' }, '/vault': { id: 'library', title: 'Your vault' } };
+const routes = { '/community': { id:'community',title:'Community' }, '/': { id: 'sanctuary', title: 'Sanctuary' }, '/listen': { id: 'listen', title: 'Listen' }, '/protect': { id: 'protect', title: 'Protect your sound' }, '/vault': { id: 'library', title: 'Your vault' } };
 const legacy = { '#protect': '/protect', '#listen': '/listen', '#library': '/vault', '#sanctuary': '/' };
 export function navigate(path) {
   if (!routes[path]) path = '/';

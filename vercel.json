@@ -1,8 +1,35 @@
 {
   "rewrites": [
-    {"source":"/listen","destination":"/index.html"},
-    {"source":"/protect","destination":"/index.html"},
-    {"source":"/vault","destination":"/index.html"}
+    {
+      "source": "/listen",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/protect",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/vault",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/community",
+      "destination": "/index.html"
+    }
   ],
-  "headers":[{"source":"/sw.js","headers":[{"key":"Cache-Control","value":"no-cache"},{"key":"Service-Worker-Allowed","value":"/"}]}]
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
+      ]
+    }
+  ]
 }

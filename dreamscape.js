@@ -1,7 +1,7 @@
 // An original procedural scene: no image assets or external visual services.
 export function createDreamscape(canvas) {
   const ctx = canvas.getContext('2d', { alpha: true });
-  let width = 0, height = 0, x = 0, velocity = 0, phase = 0, lastPaint = 0, direction = 1, colorPhase = 0;
+  let width = 0, height = 0, x = 0, velocity = 0, phase = 0, lastPaint = 0, direction = 1, colorPhase = 0, glowBoost = 0;
   function resize() {
     width = innerWidth; height = innerHeight;
     const ratio = Math.min(devicePixelRatio || 1, 1.5);
@@ -10,25 +10,30 @@ export function createDreamscape(canvas) {
   }
   resize(); window.addEventListener('resize', resize);
   return {
-    hit(strength) { direction *= -1; velocity += direction * 330 * strength; },
+    hit(strength) { direction *= -1; velocity = Math.max(-170,Math.min(170,velocity + direction * 220 * Math.min(1,strength))); },
     draw(now, dt, sound) {
       if (!ctx || document.hidden) return;
       const { bass, mids, highs, active, motion, intensity } = sound;
+      const dtSafe=Math.min(.05,Math.max(0,dt));
+      glowBoost+=(Math.max(0,Math.min(1,sound.boost||0))*intensity-glowBoost)*(1-Math.exp(-dtSafe/.4));
+      if(!motion)glowBoost=0;
       if (!motion || !intensity) { x = 0; velocity = 0; }
       // Damped spring: an immediate impact followed by a short elastic recoil.
-      const step = Math.min(dt, 1 / 30);
+      const step = Math.min(dtSafe, 1 / 30);
       velocity += (-130 * x - 9 * velocity) * step;
       x = Math.max(-24, Math.min(24, x + velocity * step));
-      if (motion) { phase += dt * (.12 + (active ? mids * .8 : 0)); colorPhase += dt / 32; }
+      if (motion) { phase += dtSafe * (.12 + (active ? Math.min(.25,mids*.4) : 0)); colorPhase = (colorPhase + dtSafe / 40) % 20; }
       if (now - lastPaint < 30) return; lastPaint = now;
       ctx.clearRect(0, 0, width, height);
       const strength = motion ? intensity : 0;
-      const pulse = active ? bass * strength : 0;
+      const pulse = motion ? bass * strength : 0;
       canvas.style.setProperty('--recoil', `${x.toFixed(3)}px`);
       const palette = [[105,210,181],[79,150,220],[139,106,208],[65,157,156],[105,210,181]];
       function colorAt(position) {
         const f=((position%1)+1)%1*(palette.length-1), index=Math.floor(f), blend=(1-Math.cos((f-index)*Math.PI))/2;
-        return palette[index].map((v,i)=>Math.round(v+(palette[index+1][i]-v)*blend));
+        const mixed=palette[index].map((v,i)=>v+(palette[index+1][i]-v)*blend);
+        const mean=mixed.reduce((a,b)=>a+b,0)/3;
+        return mixed.map(v=>Math.round(Math.max(0,Math.min(255,mean+(v-mean)*(0.75+glowBoost*1.7)))));
       }
       const colors = Array.from({length:4},(_,i)=>colorAt(colorPhase+i*.19));
       const root=document.documentElement.style;
@@ -46,7 +51,7 @@ export function createDreamscape(canvas) {
         const centerY = height * (.2 + (layer % 2) * .45);
         const radius = Math.max(width, height) * (.32 + pulse * .1);
         const glow = ctx.createRadialGradient(centerX + x * (layer + 1), centerY, 0, centerX, centerY, radius);
-        glow.addColorStop(0, `rgba(${colors[layer].join(",")},.42)`); glow.addColorStop(.5, `rgba(${colors[layer].join(",")},.15)`); glow.addColorStop(1, `rgba(${colors[layer].join(",")},0)`);
+        glow.addColorStop(0, `rgba(${colors[layer].join(",")},${.28+glowBoost*.24})`); glow.addColorStop(.5, `rgba(${colors[layer].join(",")},${.095+glowBoost*.09})`); glow.addColorStop(1, `rgba(${colors[layer].join(",")},0)`);
         ctx.fillStyle = glow; ctx.fillRect(0, 0, width, height);
       }
       // Phosphor columns and a geometric scope, drawn procedurally.

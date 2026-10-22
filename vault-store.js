@@ -1,3 +1,4 @@
+import { navigate } from './navigation.js';
 import { encryptBackup, decryptBackup } from './secure-backup.js';
 const $ = s => document.querySelector(s);
 const notice = 'Self-declared file record. Does not establish authorship, copyright registration, or a trusted timestamp. Device clock only.';
@@ -46,6 +47,7 @@ async function render() {
     const actions = element('div', '', 'vault-actions');
     actions.append(button('Export record ↗', () => json(metadata(work), `${work.file}.nox.json`)));
     if (work.audio) {
+      actions.append(button('Play offline original',()=>{navigate('/listen');window.dispatchEvent(new CustomEvent('nox-play-original',{detail:new File([work.audio],work.file,{type:work.audio.type||'audio/wav'})}))}));
       actions.append(button('Download original ↓', () => download(work.audio, work.file)));
       actions.append(button('Check stored original', async () => {
         const matches=await digest(work.audio)===work.sha256;
@@ -94,6 +96,7 @@ $('#confirm-save').onclick=async()=>{
  saving=true;lockFields(true);$('#confirm-save').disabled=true;$('#edit-save').disabled=true;
  const {record,upgrade}=pendingSave;let committed=false;
  try{
+  await requestDurability();
   saveStatus('3 / 3 · Saving locally and checking the stored copy…');
   if(upgrade){
    await ready;
@@ -128,7 +131,15 @@ $('#verify').onclick = async () => {
 render().catch(() => { $('#vault-list').textContent = 'Local storage is unavailable. Allow site storage or use a regular browser window to save works.'; });
 
 $('#vault-search').oninput=()=>render().catch(()=>{$('#vault-feedback').textContent='Could not read the vault.'});
-$('#persist-storage').onclick=async()=>{try{const granted=await navigator.storage?.persist?.();$('#vault-feedback').textContent=granted?'Durable storage granted. Keep independent backups: clearing site data still deletes the vault.':'Durable storage was not granted by this browser. Keep independent backups.'}catch{$('#vault-feedback').textContent='Durable storage is unavailable in this browser.'}};
+async function showDurability(){
+ try{const granted=await navigator.storage?.persisted?.();$('#durability-status').textContent=granted?'Durable browser storage granted · still keep independent backups.':'Standard browser storage · files survive normal closing, but may be evicted under storage pressure.'}
+ catch{$('#durability-status').textContent='Storage durability could not be checked. Keep exported backups.'}
+}
+async function requestDurability(){
+ try{const granted=await navigator.storage?.persist?.();await showDurability();return !!granted}catch{await showDurability();return false}
+}
+$('#persist-storage').onclick=async()=>{const granted=await requestDurability();$('#vault-feedback').textContent=granted?'Durable storage granted. Closing the browser keeps your files. Clearing site data still deletes them.':'Durable storage was not granted by this browser. Files still survive normal closure; keep backups against eviction.'};
+showDurability();
 let backupBusy=false;
 async function backupTask(action){if(backupBusy)return;backupBusy=true;$('#encrypted-export').disabled=true;$('#encrypted-restore').disabled=true;try{await action()}catch(e){$('#backup-status').textContent=e.message}finally{backupBusy=false;$('#encrypted-export').disabled=false;$('#encrypted-restore').disabled=false;$('#backup-password').value='';$('#backup-confirm').value=''}}
 $('#encrypted-export').onclick=()=>backupTask(async()=>{

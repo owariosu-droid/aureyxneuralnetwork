@@ -1,4 +1,5 @@
 import './style.css';
+import './offline.js';
 import { AudioResponse } from './audio-response.js';
 import { navigate } from './navigation.js';
 import { createDreamscape } from './dreamscape.js';
@@ -9,7 +10,9 @@ $('#year').textContent=new Date().getFullYear();
 function updateMotion(){document.body.classList.toggle('reduced',!motion);$('#motion').textContent=`Motion: ${motion?'on':'off'}`;$('#motion').setAttribute('aria-pressed',String(motion))}updateMotion();$('#motion').onclick=()=>{motion=!motion;updateMotion()};reducedMotion.addEventListener('change',e=>{if(e.matches){motion=false;updateMotion()}});
 window.addEventListener('pointermove',e=>{if(!motion)return;document.documentElement.style.setProperty('--depth-x',`${(e.clientX/innerWidth-.5)*22}px`);document.documentElement.style.setProperty('--depth-y',`${(e.clientY/innerHeight-.5)*18}px`);document.documentElement.style.setProperty('--px',`${(e.clientX/innerWidth-.5)*14}px`);document.documentElement.style.setProperty('--py',`${(e.clientY/innerHeight-.5)*10}px`)});
 $('#enter').onclick=()=>{navigate('/listen');if(!audio.src)$('#audio-file').click();else play()};
-$('#audio-file').onchange=e=>{const file=e.target.files[0];if(!file)return;if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(file);audio.src=url;$('#song-title').textContent=file.name.replace(/\.[^.]+$/,'');$('#play').disabled=false;$('#seek').disabled=false;play()};
+function loadSong(file){if(!file)return;if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(file);audio.src=url;$('#song-title').textContent=file.name.replace(/\.[^.]+$/,'');$('#play').disabled=false;$('#seek').disabled=false;play()}
+$('#audio-file').onchange=e=>loadSong(e.target.files[0]);
+window.addEventListener('nox-play-original',event=>loadSong(event.detail));
 async function play(){try{if(!context){context=new AudioContext();analyser=context.createAnalyser();analyser.fftSize=2048;analyser.smoothingTimeConstant=.2;source=context.createMediaElementSource(audio);source.connect(analyser);analyser.connect(context.destination)}await context.resume();await audio.play()}catch{$('#song-title').textContent='Unable to play this file. Try MP3 or WAV.'}}
 $('#play').onclick=()=>audio.paused?play():audio.pause();audio.onplay=()=>{$('#play').textContent='Ⅱ';$('#play').setAttribute('aria-label','Pause song')};audio.onpause=()=>{$('#play').textContent='▶';$('#play').setAttribute('aria-label','Play song')};audio.onended=()=>{$('#play').textContent='▶';$('#seek').value=0};
 const format=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;audio.ontimeupdate=()=>{$('#time').textContent=format(audio.currentTime);if(Number.isFinite(audio.duration))$('#seek').value=audio.currentTime/audio.duration*100};$('#seek').oninput=e=>{if(Number.isFinite(audio.duration))audio.currentTime=e.target.value/100*audio.duration};$('#mute').onclick=()=>{audio.muted=!audio.muted;$('#mute').textContent=audio.muted?'×':'◖';$('#mute').setAttribute('aria-label',audio.muted?'Unmute audio':'Mute audio')};

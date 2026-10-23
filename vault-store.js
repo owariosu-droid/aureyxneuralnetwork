@@ -23,8 +23,9 @@ async function render() {
   const query=$('#vault-search').value.trim().toLowerCase();
   const filtered=works.filter(w=>[w.title,w.artist,w.file].some(v=>v?.toLowerCase().includes(query)));
   if (works.length && !filtered.length) list.append(element('p','No originals match your search.','empty-vault'));
-  if (!works.length) list.append(element('p', 'Your vault is quiet. Save your first original above.', 'empty-vault'));
-  works.sort((a,b) => b.deviceTime.localeCompare(a.deviceTime));
+  if(!works.length){const empty=element('div','','empty-vault');const link=element('a','Save your first original ↗','secondary');link.href='/protect';link.dataset.route='';empty.append(element('h3','A little quiet in here.'),element('p','This private space is ready for your originals. Start in Protect, then return here to verify and back up your work.'),link);list.append(empty);}
+  const sort=$('#vault-sort').value;
+  filtered.sort((a,b)=>sort==='title'?(a.title||a.file).localeCompare(b.title||b.file):sort==='artist'?a.artist.localeCompare(b.artist):sort==='oldest'?Date.parse(a.deviceTime)-Date.parse(b.deviceTime):Date.parse(b.deviceTime)-Date.parse(a.deviceTime));
   for (const work of filtered) {
     const card = element('article', '', 'work-card');
     card.append(element('span', work.audio ? 'RECORD + ORIGINAL · LOCAL' : 'FINGERPRINT RECORD · LOCAL', 'eyebrow'), element('h3', work.title || work.file), element('p', `${work.artist} · ${work.file} · ${(work.bytes / 1048576).toFixed(2)} MB`), element('p', `Device date: ${new Date(work.deviceTime).toLocaleString()}`), element('code', work.sha256));
@@ -53,6 +54,7 @@ for(const selector of saveFields)$(selector).addEventListener('input',resetRevie
 $('#edit-save').onclick=()=>{resetReview();$('#artist').focus();saveStatus('Edit your details, then review again. Nothing has been saved yet.')};
 $('#create-proof').onclick=async()=>{
  if(saving)return;
+ if(!privateVault.key){$('#private-gate').open=true;$('#space-name').focus();$('#space-status').textContent='Unlock your private space or create one before saving an original.';return}
  resetReview();const artist=$('#artist').value.trim(),file=$('#proof-file').files[0];
  if(!artist){saveStatus('Enter the artist or rights holder first.');$('#artist').focus();return}
  if(!file){saveStatus('Choose an audio file first.');$('#proof-file').click();return}
@@ -113,7 +115,7 @@ $('#verify').onclick = async () => {
     status.textContent = matches ? 'Exact match. This file has the same bytes as the recorded original. This does not verify the identity or authorship claimed in the record.' : 'No match. The file differs from this record. Re-encoding or editing also changes its fingerprint.';
   } catch (e) { status.textContent = `Unable to verify: ${e.message}`; } finally { button.disabled = false; }
 };
-$('#vault-list').textContent='Unlock a private space to see its songs.';
+showLockedVault();
 
 $('#vault-search').oninput=()=>render().catch(()=>{$('#vault-feedback').textContent='Could not read the vault.'});
 async function showDurability(){
@@ -148,8 +150,8 @@ function clearSpace(){
  for(const selector of ['#artist','#work-title','#notes','#backup-password','#backup-confirm','#vault-search'])$(selector).value='';
  $('#restore-file').value='';$('#verify-audio').value='';$('#verify-record').value='';$('#proof-status').textContent='';$('#vault-feedback').textContent='';$('#backup-status').textContent='';$('#verify-status').textContent='';
  for(const selector of ['#review-title','#review-details','#review-storage','#receipt-title','#receipt-detail'])$(selector).replaceChildren();
- $('#vault-list').replaceChildren(element('p','Unlock your private space to see its songs.','empty-vault'));$('#vault-count').textContent='Locked';$('#vault-size').textContent='Locked';
- $('#legacy-consent').checked=false;$('#legacy-delete-consent').checked=false;$('#legacy-status').textContent='';legacyImported=false;$('#space-label').textContent='No private space unlocked';$('#lock-space').hidden=true;document.body.classList.remove('space-unlocked');
+ showLockedVault();$('#vault-count').textContent='Locked';$('#vault-size').textContent='Locked';
+ $('#legacy-consent').checked=false;$('#legacy-delete-consent').checked=false;$('#legacy-status').textContent='';legacyImported=false;$('#private-summary-status').textContent='Locked · unlock to save or publish';$('#space-label').textContent='No private space unlocked';$('#lock-space').hidden=true;document.body.classList.remove('space-unlocked');
  window.dispatchEvent(new Event('nox-space-locked'));
 }
 $('#lock-space').onclick=()=>{if(saving||backupBusy){$('#space-status').textContent='Wait for the current save or backup to finish, then lock.';return}clearSpace();$('#space-status').textContent='Locked. Enter your space name and passphrase to reopen it.'};
@@ -158,7 +160,7 @@ $('#space-form').onsubmit=async event=>{
  const name=$('#space-name').value,password=$('#space-password').value,create=$('#space-create').checked;
  if(create&&password!==$('#space-confirm').value){$('#space-status').textContent='Passphrases do not match.';return}
  clearSpace();$('#space-submit').disabled=true;
- try{await privateVault.open(name,password,create);$('#space-label').textContent=`Private space: ${privateVault.name}`;document.body.classList.add('space-unlocked');$('#lock-space').hidden=false;await render();$('#space-status').textContent='Unlocked on this tab. Only this space’s originals are shown. Lock before handing over your device.';}
+ try{await privateVault.open(name,password,create);$('#space-label').textContent=`Private space: ${privateVault.name}`;$('#private-summary-status').textContent=`Unlocked · ${privateVault.name}`;$('#private-gate').open=false;document.body.classList.add('space-unlocked');$('#lock-space').hidden=false;await render();$('#private-gate summary').focus();$('#space-status').textContent='Unlocked on this tab. Only this space’s originals are shown. Lock before handing over your device.';}
  catch(e){clearSpace();$('#space-status').textContent=e.message}
  finally{$('#space-password').value='';$('#space-confirm').value='';$('#space-submit').disabled=false}
 };
@@ -193,3 +195,7 @@ window.addEventListener('pageshow',event=>{if(event.persisted)location.reload()}
 $('#quick-lock').onclick=()=>$('#lock-space').click();
 
 window.addEventListener('nox-force-lock',clearSpace);
+
+$('#vault-sort').onchange=()=>render().catch(()=>{$('#vault-feedback').textContent='Unlock your private space to sort its songs.'});
+
+function showLockedVault(){const empty=element('div','','empty-vault');const unlock=button('Unlock your private space',()=>{$('#private-gate').open=true;$('#space-name').focus()});empty.append(element('h3','Your originals stay private.'),element('p','Unlock your space to see saved songs. No originals are shown while this tab is locked.'),unlock);$('#vault-list').replaceChildren(empty);}

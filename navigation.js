@@ -8,7 +8,7 @@ export function navigate(path) {
 function render(focus = false) {
   const path = routes[location.pathname] ? location.pathname : '/';
   const route = routes[path];
-  document.querySelectorAll('main > section').forEach(section => { section.hidden = section.id !== route.id && !(path === '/' && section.classList.contains('closing')); });
+  document.querySelectorAll('main > section').forEach(section => { section.hidden = section.id !== route.id && !(path === '/' && (section.classList.contains('closing')||section.id==='pathways')); });
   document.querySelectorAll('nav a[data-route]').forEach(link => {
     const current = link.getAttribute('href') === path;
     link.classList.toggle('active', current);

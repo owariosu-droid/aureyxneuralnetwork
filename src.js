@@ -1,7 +1,8 @@
 import './style.css';
+import './atmosphere.css';
 import {listeningPreferences,saveListeningPreference} from './listening-ui.js';
 import './offline.js';
-import './community.js';
+import './community-ui.js';
 import { AudioResponse } from './audio-response.js';
 import { navigate } from './navigation.js';
 import { createDreamscape } from './dreamscape.js';

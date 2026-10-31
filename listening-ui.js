@@ -1,7 +1,7 @@
 const $=s=>document.querySelector(s);
 const audio=$('#audio');
-let preferences={volume:.8,intensity:65,motion:true};
-try{const saved=JSON.parse(localStorage.getItem('nox-preferences')||'{}');if(Number.isFinite(saved.volume))preferences.volume=Math.max(0,Math.min(1,saved.volume));if(Number.isFinite(saved.intensity))preferences.intensity=Math.max(0,Math.min(100,saved.intensity));if(typeof saved.motion==='boolean')preferences.motion=saved.motion;}catch{}
+let preferences={volume:.8,intensity:65,motion:true,haze:true};
+try{const saved=JSON.parse(localStorage.getItem('nox-preferences')||'{}');if(Number.isFinite(saved.volume))preferences.volume=Math.max(0,Math.min(1,saved.volume));if(Number.isFinite(saved.intensity))preferences.intensity=Math.max(0,Math.min(100,saved.intensity));if(typeof saved.motion==='boolean')preferences.motion=saved.motion;if(typeof saved.haze==='boolean')preferences.haze=saved.haze;}catch{}
 export const listeningPreferences=preferences;
 export function saveListeningPreference(key,value){preferences[key]=value;try{localStorage.setItem('nox-preferences',JSON.stringify(preferences))}catch{}}
 audio.volume=preferences.volume;$('#volume').value=Math.round(audio.volume*100);$('#volume-value').textContent=`${Math.round(audio.volume*100)}%`;
@@ -13,3 +13,5 @@ audio.addEventListener('playing',()=>{$('#playback-status').textContent='Playing
 audio.addEventListener('pause',()=>{if(!audio.ended&&audio.getAttribute('src'))$('#playback-status').textContent='Paused · your song is still loaded.'});
 window.addEventListener('nox-space-locked',()=>{$('#playback-status').textContent='Private space locked. Choose a song to begin.'});
 document.addEventListener('keydown',event=>{if(event.key.toLowerCase()!=='k'||event.ctrlKey||event.altKey||event.metaKey||event.repeat||guide.open||document.body.dataset.page!=='listen')return;if(event.target.closest('input,textarea,select,button,a,[contenteditable="true"]'))return;if(!$('#play').disabled){event.preventDefault();$('#play').click()}});
+
+function updateHaze(){document.body.classList.toggle('soft-haze',!preferences.haze);$('#haze-depth').textContent=`Haze: ${preferences.haze?'deep':'soft'}`;$('#haze-depth').setAttribute('aria-pressed',String(preferences.haze))}updateHaze();$('#haze-depth').onclick=()=>{saveListeningPreference('haze',!preferences.haze);updateHaze()};

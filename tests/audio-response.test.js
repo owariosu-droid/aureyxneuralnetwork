@@ -24,3 +24,20 @@ test('envelopes are frame-rate independent and ignore nonfinite inputs',()=>{
  const bad=new AudioResponse().step({active:true,bass:NaN,mids:Infinity,highs:-4,rms:.2},.016);
  for(const value of Object.values(bad))assert.ok(Number.isFinite(value));
 });
+test('heavy sustained bass has much stronger regional drive than mids or treble',()=>{
+ const bass=run(new AudioResponse(),{bass:.85,mids:.12,highs:.08,rms:.25,active:true},1);
+ const bright=run(new AudioResponse(),{bass:.07,mids:.6,highs:.9,rms:.25,active:true},1);
+ assert.ok(bass.surge>.9);assert.equal(bright.surge,0);
+});
+test('regional bass drive rises smoothly and settles through pause and silence',()=>{
+ const response=new AudioResponse(),signal={bass:.85,mids:.12,highs:.08,rms:.25,active:true};
+ const first=response.step(signal,1/60);assert.ok(first.surge>0&&first.surge<.25);
+ run(response,signal,1);const paused=run(response,{...signal,active:false},5);assert.ok(paused.surge<.001);
+ run(response,signal,1);assert.ok(run(response,{...signal,rms:0},5).surge<.001);
+});
+test('regional bass drive is stable across frame rates and reset does not kick it',()=>{
+ const signal={bass:.85,mids:.12,highs:.08,rms:.25,active:true};
+ const low=run(new AudioResponse(),signal,1,30),high=run(new AudioResponse(),signal,1,120);
+ assert.ok(Math.abs(low.surge-high.surge)<.001);
+ const response=new AudioResponse();run(response,signal,1);const before=response.surge;response.reset();assert.equal(response.surge,before);assert.equal(response.step(signal,1/60).hit,0);
+});

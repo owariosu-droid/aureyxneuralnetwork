@@ -21,7 +21,7 @@ $('#play').onclick=()=>audio.paused?play():audio.pause();audio.onplay=()=>{$('#p
 const format=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;audio.ontimeupdate=()=>{$('#time').textContent=format(audio.currentTime);if(Number.isFinite(audio.duration))$('#seek').value=audio.currentTime/audio.duration*100};$('#seek').oninput=e=>{if(Number.isFinite(audio.duration))audio.currentTime=e.target.value/100*audio.duration};$('#mute').onclick=()=>{audio.muted=!audio.muted;$('#mute').textContent=audio.muted?'×':'◖';$('#mute').setAttribute('aria-label',audio.muted?'Unmute audio':'Mute audio')};
 const data=new Uint8Array(1024);
 const bars=Array.from({length:24},()=>{const bar=document.createElement('i');$('.equalizer').append(bar);return bar});
-const response=new AudioResponse(), waveform=new Float32Array(2048);let lastFrame=0;
+const response=new AudioResponse(), waveform=new Float32Array(2048);let lastFrame=0,bassFlow=0;
 for(const event of ['seeking','seeked','emptied','play','pause','ended','waiting'])audio.addEventListener(event,()=>response.reset());
 document.addEventListener('visibilitychange',()=>{response.reset();lastFrame=0});
 function band(low,high){const step=context.sampleRate/analyser.fftSize;let sum=0,count=0;for(let i=Math.max(1,Math.floor(low/step));i<Math.min(data.length,Math.ceil(high/step));i++){sum+=data[i]/255;count++}return count?sum/count:0}
@@ -34,6 +34,8 @@ function animate(now){
  if(state.hit)dream.hit(intensity*state.hit);
  const root=document.documentElement.style;
  for(const key of ['bass','mids','highs','beat'])root.setProperty(`--${key}`,motion?state[key]:0);
+ if(motion)bassFlow=(bassFlow+dt*state.surge*intensity*100)%360;
+ root.setProperty('--bass-drive',motion?state.surge*intensity:0);root.setProperty('--bass-flow',`${bassFlow}deg`);
  root.setProperty('--energy',motion?state.bass:0);root.setProperty('--sound-hue','0deg');
  root.setProperty('--playback-boost',motion?state.boost*intensity:0);
  document.body.classList.toggle('sound-active',active&&rms>.003);

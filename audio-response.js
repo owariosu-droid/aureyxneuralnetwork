@@ -1,7 +1,7 @@
 const clamp = (value, low=0, high=1) => Math.min(high, Math.max(low, Number.isFinite(value) ? value : 0));
 const follow = (value, target, dt, attack, release) => value + (target-value)*(1-Math.exp(-dt/(target>value?attack:release)));
 export class AudioResponse {
-  constructor() { this.bass=0;this.mids=0;this.highs=0;this.beat=0;this.boost=0;this.reset(); }
+  constructor() { this.bass=0;this.mids=0;this.highs=0;this.beat=0;this.boost=0;this.surge=0;this.reset(); }
   reset() { this.baseline=0;this.previous=0;this.warmup=0;this.sinceBeat=1;this.beat=0; }
   step({bass=0,mids=0,highs=0,rms=0,active=false}, elapsed) {
     const dt=clamp(elapsed,0,.05);this.sinceBeat+=dt;
@@ -19,6 +19,12 @@ export class AudioResponse {
     this.highs=follow(this.highs,highs,dt,.08,.25);
     this.beat*=Math.exp(-dt*8);
     this.boost=follow(this.boost,audible?clamp(.4+rms*2+this.mids*.35):0,dt,.35,.55);
-    return {bass:this.bass,mids:this.mids,highs:this.highs,beat:this.beat,boost:this.boost,hit};
+    // Sustained low-end pressure drives regional movement separately from beat jolts.
+    // Treble-only material must not wind the whole scene up.
+    const weight=clamp((bass-.1)/.5);
+    const dominance=clamp((bass/(mids+.12)-.7)/1.3);
+    const pressure=audible?weight*weight*(.35+.65*dominance):0;
+    this.surge=follow(this.surge,pressure,dt,.085,.45);
+    return {bass:this.bass,mids:this.mids,highs:this.highs,beat:this.beat,boost:this.boost,surge:this.surge,hit};
   }
 }

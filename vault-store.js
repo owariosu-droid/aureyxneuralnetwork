@@ -96,6 +96,7 @@ $('#confirm-save').onclick=async()=>{
   $('#receipt-title').textContent=stored.title||stored.file;
   $('#receipt-detail').textContent=stored.audio?'Saved and read back successfully: fingerprint + original audio. The stored audio matches your file. Make an encrypted backup in Vault; clearing browser data can erase this copy.':'Saved and read back successfully: fingerprint record only. Your audio has NOT been copied into the vault. Keep your original audio and download this record.';
   saveStatus('Saved and verified on this device. No file was uploaded.');
+  window.dispatchEvent(new Event('nox-save-verified'));
   await render();$('#receipt-export').focus();
  }catch(e){saveStatus(committed?`The save completed, but verification could not finish: ${e.message}`:`Save did not complete: ${e.name==='QuotaExceededError'?'Browser storage is full. Try fingerprint-only after reviewing.':e.name==='ConstraintError'?'This file was saved in another tab. Open Vault to check it.':e.message}`)}
  finally{saving=false;lockFields(false);$('#confirm-save').disabled=false;$('#edit-save').disabled=false}

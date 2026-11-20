@@ -1,4 +1,5 @@
 import './style.css';
+import './interface-sounds.js';
 import './atmosphere.css';
 import {listeningPreferences,saveListeningPreference} from './listening-ui.js';
 import './offline.js';
